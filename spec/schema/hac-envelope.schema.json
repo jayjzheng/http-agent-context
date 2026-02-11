@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hac.example/schema/hac-envelope.schema.json",
+  "title": "HAC Response Envelope",
+  "description": "The HTTP Agent Context (HAC) response envelope wraps an API payload with agent-oriented metadata.",
+  "type": "object",
+  "required": ["data", "_hac"],
+  "properties": {
+    "data": {
+      "description": "The original API payload. May be any valid JSON value (object, array, string, number, boolean, or null)."
+    },
+    "_hac": {
+      "$ref": "#/$defs/HacMeta"
+    }
+  },
+  "$defs": {
+    "HacMeta": {
+      "type": "object",
+      "description": "Agent-oriented metadata about the resource.",
+      "required": ["version"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "The HAC specification version this response conforms to.",
+          "examples": ["1.0"]
+        },
+        "description": {
+          "type": "string",
+          "description": "An LLM-optimized description of the resource. SHOULD be explicit about consequences, constraints, and edge cases."
+        },
+        "actions": {
+          "type": "array",
+          "description": "Available actions the agent may perform on or related to this resource.",
+          "items": {
+            "$ref": "#/$defs/Action"
+          }
+        },
+        "related": {
+          "type": "array",
+          "description": "Related resources the agent may want to navigate to.",
+          "items": {
+            "$ref": "#/$defs/RelatedResource"
+          }
+        }
+      }
+    },
+    "Action": {
+      "type": "object",
+      "description": "A hypermedia action the agent can invoke.",
+      "required": ["rel", "method", "href"],
+      "properties": {
+        "rel": {
+          "type": "string",
+          "description": "Link relation type. SHOULD use IANA-registered relation types where applicable; otherwise use a URI or descriptive extension token.",
+          "examples": ["edit", "delete", "deactivate"]
+        },
+        "method": {
+          "type": "string",
+          "description": "HTTP method for the action.",
+          "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+        },
+        "href": {
+          "type": "string",
+          "description": "The URI or URI Template (RFC 6570) for the action.",
+          "format": "uri-reference"
+        },
+        "description": {
+          "type": "string",
+          "description": "An LLM-optimized description of what this action does, including consequences and preconditions."
+        },
+        "safety": {
+          "$ref": "#/$defs/Safety"
+        },
+        "fields": {
+          "type": "array",
+          "description": "Input fields accepted by this action.",
+          "items": {
+            "$ref": "#/$defs/Field"
+          }
+        },
+        "preconditions": {
+          "type": "array",
+          "description": "Human-readable preconditions that must be satisfied before invoking this action.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Safety": {
+      "type": "object",
+      "description": "Safety metadata that helps agents assess risk before performing an action.",
+      "properties": {
+        "mutability": {
+          "type": "string",
+          "description": "Whether the action mutates state and, if so, whether the mutation can be reversed.",
+          "enum": ["read_only", "reversible", "irreversible"]
+        },
+        "blast_radius": {
+          "type": "string",
+          "description": "The scope of resources affected by this action.",
+          "enum": ["self", "self_and_associated", "many", "all"]
+        },
+        "reversible_within": {
+          "type": "string",
+          "description": "ISO 8601 duration indicating how long the action remains reversible (e.g., 'P30D' for 30 days).",
+          "pattern": "^P(?:\\d+Y)?(?:\\d+M)?(?:\\d+W)?(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+S)?)?$",
+          "examples": ["P30D", "PT1H", "P7D"]
+        },
+        "confirmation_recommended": {
+          "type": "boolean",
+          "description": "When true, the agent SHOULD confirm with the user before performing this action.",
+          "default": false
+        },
+        "cost": {
+          "$ref": "#/$defs/Cost"
+        }
+      }
+    },
+    "Cost": {
+      "type": "object",
+      "description": "Financial cost associated with performing the action.",
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "The monetary cost of the action.",
+          "examples": [9.99]
+        },
+        "currency": {
+          "type": "string",
+          "description": "ISO 4217 currency code.",
+          "pattern": "^[A-Z]{3}$",
+          "examples": ["USD", "EUR"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable explanation of the cost.",
+          "examples": ["Monthly subscription fee"]
+        }
+      }
+    },
+    "Field": {
+      "type": "object",
+      "description": "An input field for an action.",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The field name as expected in the request body or query string."
+        },
+        "type": {
+          "type": "string",
+          "description": "The JSON Schema type of the field value.",
+          "enum": ["string", "number", "integer", "boolean", "array", "object"]
+        },
+        "description": {
+          "type": "string",
+          "description": "An LLM-optimized description of the field, including constraints and side effects."
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether the field is required.",
+          "default": false
+        },
+        "enum": {
+          "type": "array",
+          "description": "Allowed values for the field.",
+          "items": {}
+        },
+        "default": {
+          "description": "Default value for the field if not provided."
+        }
+      }
+    },
+    "RelatedResource": {
+      "type": "object",
+      "description": "A link to a related resource.",
+      "required": ["rel", "href"],
+      "properties": {
+        "rel": {
+          "type": "string",
+          "description": "Link relation type."
+        },
+        "href": {
+          "type": "string",
+          "description": "URI or URI Template for the related resource.",
+          "format": "uri-reference"
+        },
+        "description": {
+          "type": "string",
+          "description": "An LLM-optimized description of the related resource."
+        }
+      }
+    }
+  }
+}

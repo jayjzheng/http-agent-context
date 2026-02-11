@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hac.example/schema/hac-error.schema.json",
+  "title": "HAC Error Response",
+  "description": "The HTTP Agent Context (HAC) error response envelope provides structured error information with optional recovery guidance for AI agents.",
+  "type": "object",
+  "required": ["error"],
+  "properties": {
+    "error": {
+      "$ref": "#/$defs/HacError"
+    }
+  },
+  "$defs": {
+    "HacError": {
+      "type": "object",
+      "description": "Structured error with optional recovery guidance.",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "A machine-readable error code. SHOULD be a stable identifier suitable for programmatic matching.",
+          "examples": ["active_subscriptions", "insufficient_permissions", "not_found"]
+        },
+        "message": {
+          "type": "string",
+          "description": "A human- and LLM-readable error message describing what went wrong.",
+          "examples": ["Cannot delete user with active subscriptions"]
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Whether the agent MAY retry the same request and expect a different outcome (e.g., after a transient failure).",
+          "default": false
+        },
+        "retry_after": {
+          "type": "integer",
+          "description": "Suggested number of seconds to wait before retrying, if retryable is true.",
+          "minimum": 0
+        },
+        "recovery": {
+          "$ref": "#/$defs/Recovery"
+        }
+      }
+    },
+    "Recovery": {
+      "type": "object",
+      "description": "Structured recovery guidance that tells the agent how to resolve the error.",
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "An LLM-optimized description of the recovery steps the agent should take."
+        },
+        "actions": {
+          "type": "array",
+          "description": "Concrete actions the agent can take to recover from the error.",
+          "items": {
+            "$ref": "hac-envelope.schema.json#/$defs/Action"
+          }
+        }
+      }
+    }
+  }
+}
